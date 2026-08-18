@@ -1,6 +1,7 @@
 // ============================================
 // ADMIN.JS - Quick Dukan Admin Panel
 // Complete with Delivery Boys, Ratings, Users, Block System
+// With Popup Control (Max 2 times)
 // ============================================
 
 // ⚠️ अपना Google Apps Script Web App URL डालें
@@ -14,6 +15,11 @@ let currentAssignOrderId = null;
 let deliveryBoysList = [];
 let lastDeliveryBoyRequestCount = 0;
 let currentBlockUserPhone = null;
+
+// 🆕 POPUP CONTROL
+let orderNotificationShownCount = 0;
+let deliveryBoyNotificationShownCount = 0;
+const MAX_NOTIFICATION_SHOW = 2;
 
 // ============================================
 // SOUND SYSTEM
@@ -89,7 +95,6 @@ function switchTab(tabName) {
         tabContent.classList.add('active');
     }
     
-    // Tab switch होने पर specific data load करें
     if (tabName === 'orders') loadOrders();
     else if (tabName === 'deliveryBoys') {
         loadDeliveryBoyRequests();
@@ -222,9 +227,17 @@ async function loadBlockedUsers() {
 }
 
 // ============================================
-// SHOW NOTIFICATIONS
+// SHOW NOTIFICATIONS (With Popup Control)
 // ============================================
 function showNewOrderNotification(order) {
+    // 🆕 सिर्फ 2 बार show होगा
+    if (orderNotificationShownCount >= MAX_NOTIFICATION_SHOW) {
+        console.log('🔔 Order notification limit reached, skipping popup');
+        return;
+    }
+    
+    orderNotificationShownCount++;
+    
     currentNotificationOrderId = order[0] || 'Unknown';
     const customerName = order[1] || 'Unknown';
     const total = order[8] || '0';
@@ -238,10 +251,18 @@ function showNewOrderNotification(order) {
     document.getElementById('notificationPopup').classList.add('show');
     setTimeout(() => {
         document.getElementById('notificationPopup').classList.remove('show');
-    }, 15000);
+    }, 10000);
 }
 
 function showDeliveryBoyNotification() {
+    // 🆕 सिर्फ 2 बार show होगा
+    if (deliveryBoyNotificationShownCount >= MAX_NOTIFICATION_SHOW) {
+        console.log('🔔 Delivery boy notification limit reached, skipping popup');
+        return;
+    }
+    
+    deliveryBoyNotificationShownCount++;
+    
     document.getElementById('deliveryBoyNotificationBody').innerHTML = `
         <strong>🛵 नई Delivery Boy Login Request आई है!</strong><br>
         कृपया request को approve या reject करें।
@@ -250,7 +271,7 @@ function showDeliveryBoyNotification() {
     document.getElementById('deliveryBoyNotification').classList.add('show');
     setTimeout(() => {
         document.getElementById('deliveryBoyNotification').classList.remove('show');
-    }, 15000);
+    }, 10000);
 }
 
 // ============================================
@@ -809,3 +830,4 @@ console.log('🛵 Delivery Boy System: Enabled');
 console.log('⭐ Rating System: Enabled');
 console.log('👤 User Management: Enabled');
 console.log('🚫 Block System: Enabled');
+console.log('🔔 Popup Control: Max ' + MAX_NOTIFICATION_SHOW + ' times');
