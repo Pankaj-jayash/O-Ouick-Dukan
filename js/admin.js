@@ -1,7 +1,7 @@
 // ============================================
 // ADMIN.JS - Quick Dukan Admin Panel
 // Complete with Delivery Boys, Ratings, Users, Block System
-// With Popup Control (Max 2 times)
+// Per-Order Popup Control (हर order 2 बार)
 // ============================================
 
 // ⚠️ अपना Google Apps Script Web App URL डालें
@@ -16,31 +16,31 @@ let deliveryBoysList = [];
 let lastDeliveryBoyRequestCount = 0;
 let currentBlockUserPhone = null;
 
-// 🆕 POPUP CONTROL
-let orderNotificationShownCount = 0;
-let deliveryBoyNotificationShownCount = 0;
-const MAX_NOTIFICATION_SHOW = 2;
+// 🆕 PER-ORDER POPUP CONTROL
+let notifiedOrderIds = {}; // { orderId: shownCount }
+let notifiedDeliveryBoyPhones = {}; // { phone: shownCount }
+const MAX_POPUP_SHOW_PER_ITEM = 2;
 
 // ============================================
 // SOUND SYSTEM
 // ============================================
 function playNotificationSound() {
     if (!soundEnabled) return;
-    
+
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        
+
         oscillator.frequency.value = 800;
         oscillator.type = 'sine';
-        
+
         gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
-        
+
         oscillator.start(audioCtx.currentTime);
         oscillator.stop(audioCtx.currentTime + 1);
     } catch (e) {
@@ -85,16 +85,16 @@ function switchTab(tabName) {
             tab.classList.add('active');
         }
     });
-    
+
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    
+
     const tabContent = document.getElementById(tabName + 'Tab');
     if (tabContent) {
         tabContent.classList.add('active');
     }
-    
+
     if (tabName === 'orders') loadOrders();
     else if (tabName === 'deliveryBoys') {
         loadDeliveryBoyRequests();
@@ -102,7 +102,7 @@ function switchTab(tabName) {
     }
     else if (tabName === 'ratings') loadRatings();
     else if (tabName === 'users') loadBlockedUsers();
-    
+
     console.log('📑 Tab switched to:', tabName);
 }
 
@@ -118,19 +118,22 @@ async function loadOrders() {
     try {
         const response = await fetch(`${API_URL}?action=getOrders`);
         const data = await response.json();
-        
+
         if (data.success && data.orders) {
             const orders = data.orders;
-            
+
+            // नए orders check करें (हर नए order के लिए popup)
             if (orders.length > lastOrderCount) {
-                const newOrder = orders[orders.length - 1];
-                showNewOrderNotification(newOrder);
-                playNotificationSound();
+                const newOrders = orders.slice(lastOrderCount);
+                newOrders.forEach(newOrder => {
+                    showNewOrderNotification(newOrder);
+                    playNotificationSound();
+                });
             }
-            
+
             lastOrderCount = orders.length;
             currentOrders = orders;
-            
+
             displayOrders(orders);
             updateStats(orders);
             updateOrdersTabCount(orders);
@@ -150,19 +153,22 @@ async function loadDeliveryBoyRequests() {
     try {
         const response = await fetch(`${API_URL}?action=getDeliveryBoyRequests`);
         const data = await response.json();
-        
+
         if (data.success && data.requests) {
             const requests = data.requests;
-            
             const pendingRequests = requests.filter(r => r[2] === 'Pending Approval');
-            if (pendingRequests.length > lastDeliveryBoyRequestCount) {
-                showDeliveryBoyNotification();
-                playNotificationSound();
-            }
-            
-            lastDeliveryBoyRequestCount = pendingRequests.length;
+
+            // हर pending request के लिए popup check
+            pendingRequests.forEach(request => {
+                const phone = request[0] || 'Unknown';
+                if (!notifiedDeliveryBoyPhones[phone] || notifiedDeliveryBoyPhones[phone] < MAX_POPUP_SHOW_PER_ITEM) {
+                    showDeliveryBoyNotification(phone);
+                    playNotificationSound();
+                }
+            });
+
             deliveryBoysList = requests.filter(r => r[2] === 'Approved');
-            
+
             displayDeliveryBoyRequests(requests);
             updateDeliveryBoysStats(requests);
         }
@@ -178,7 +184,7 @@ async function loadDeliveryBoyStats() {
     try {
         const response = await fetch(`${API_URL}?action=getDeliveryBoyStats`);
         const data = await response.json();
-        
+
         if (data.success && data.stats) {
             displayDeliveryBoyStats(data.stats);
         }
@@ -196,7 +202,7 @@ async function loadRatings() {
     try {
         const response = await fetch(`${API_URL}?action=getRatings`);
         const data = await response.json();
-        
+
         if (data.success && data.ratings) {
             displayRatings(data.ratings);
             updateRatingsStats(data.ratings);
@@ -213,7 +219,7 @@ async function loadBlockedUsers() {
     try {
         const response = await fetch(`${API_URL}?action=getBlockedUsers`);
         const data = await response.json();
-        
+
         if (data.success && data.users) {
             displayBlockedUsers(data.users);
             document.getElementById('blockedUsers').textContent = data.users.filter(u => u[2] === 'Blocked').length;
@@ -227,68 +233,88 @@ async function loadBlockedUsers() {
 }
 
 // ============================================
-// SHOW NOTIFICATIONS (With Popup Control)
+// SHOW NEW ORDER NOTIFICATION (Per-Order 2 बार)
 // ============================================
 function showNewOrderNotification(order) {
-    // 🆕 सिर्फ 2 बार show होगा
-    if (orderNotificationShownCount >= MAX_NOTIFICATION_SHOW) {
-        console.log('🔔 Order notification limit reached, skipping popup');
+    const orderId = order[0] || 'Unknown';
+    
+    // इस order के लिए count initialize करें
+    if (!notifiedOrderIds[orderId]) {
+        notifiedOrderIds[orderId] = 0;
+    }
+    
+    // अगर 2 बार दिख चुका है तो skip
+    if (notifiedOrderIds[orderId] >= MAX_POPUP_SHOW_PER_ITEM) {
+        console.log(`🔔 Order ${orderId} popup already shown 2 times, skipping`);
         return;
     }
     
-    orderNotificationShownCount++;
+    notifiedOrderIds[orderId]++;
     
-    currentNotificationOrderId = order[0] || 'Unknown';
+    currentNotificationOrderId = orderId;
     const customerName = order[1] || 'Unknown';
     const total = order[8] || '0';
     
     document.getElementById('notificationBody').innerHTML = `
-        <strong>Order ID:</strong> ${currentNotificationOrderId}<br>
+        <strong>Order ID:</strong> ${orderId}<br>
         <strong>Customer:</strong> ${customerName}<br>
         <strong>Total:</strong> ₹${total}
     `;
     
     document.getElementById('notificationPopup').classList.add('show');
+    console.log(`🔔 Order ${orderId} popup shown (${notifiedOrderIds[orderId]}/${MAX_POPUP_SHOW_PER_ITEM})`);
+    
     setTimeout(() => {
         document.getElementById('notificationPopup').classList.remove('show');
     }, 10000);
 }
 
-function showDeliveryBoyNotification() {
-    // 🆕 सिर्फ 2 बार show होगा
-    if (deliveryBoyNotificationShownCount >= MAX_NOTIFICATION_SHOW) {
-        console.log('🔔 Delivery boy notification limit reached, skipping popup');
+// ============================================
+// SHOW DELIVERY BOY NOTIFICATION (Per-Request 2 बार)
+// ============================================
+function showDeliveryBoyNotification(phone) {
+    const cleanPhone = phone || 'Unknown';
+    
+    if (!notifiedDeliveryBoyPhones[cleanPhone]) {
+        notifiedDeliveryBoyPhones[cleanPhone] = 0;
+    }
+    
+    if (notifiedDeliveryBoyPhones[cleanPhone] >= MAX_POPUP_SHOW_PER_ITEM) {
+        console.log(`🔔 Delivery boy ${cleanPhone} popup already shown 2 times, skipping`);
         return;
     }
     
-    deliveryBoyNotificationShownCount++;
+    notifiedDeliveryBoyPhones[cleanPhone]++;
     
     document.getElementById('deliveryBoyNotificationBody').innerHTML = `
-        <strong>🛵 नई Delivery Boy Login Request आई है!</strong><br>
+        <strong>🛵 नई Delivery Boy Login Request!</strong><br>
+        <strong>Phone:</strong> ${cleanPhone}<br>
         कृपया request को approve या reject करें।
     `;
     
     document.getElementById('deliveryBoyNotification').classList.add('show');
+    console.log(`🔔 Delivery boy ${cleanPhone} popup shown (${notifiedDeliveryBoyPhones[cleanPhone]}/${MAX_POPUP_SHOW_PER_ITEM})`);
+    
     setTimeout(() => {
         document.getElementById('deliveryBoyNotification').classList.remove('show');
     }, 10000);
 }
 
 // ============================================
-// DISPLAY ORDERS
+// DISPLAY ORDERS (Rating Column)
 // ============================================
 function displayOrders(orders) {
     const tbody = document.getElementById('ordersBody');
     document.getElementById('ordersCount').textContent = orders.length;
-    
+
     if (!orders || orders.length === 0) {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;">📭 कोई ऑर्डर नहीं</td></tr>';
         return;
     }
-    
+
     const recentOrders = orders.slice(-50).reverse();
     tbody.innerHTML = '';
-    
+
     recentOrders.forEach(order => {
         const orderId = order[0] || 'N/A';
         const customerName = order[1] || 'N/A';
@@ -302,11 +328,11 @@ function displayOrders(orders) {
         const status = order[13] || 'Pending';
         const orderDate = order[14] || '';
         const deliveryBoyPhone = order[16] || '';
-        const rating = order[17] || '';
-        
+        const rating = order[17] || ''; // 🆕 Rating
+
         const statusClass = status.toLowerCase();
         const address = [villageCity, landmark, pincode].filter(Boolean).join(', ');
-        
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><strong>${orderId}</strong></td>
@@ -347,14 +373,14 @@ function displayDeliveryBoyRequests(requests) {
     const tbody = document.getElementById('deliveryBoysBody');
     document.getElementById('deliveryBoysCount').textContent = requests.length;
     document.getElementById('deliveryBoysTabCount').textContent = requests.length;
-    
+
     if (!requests || requests.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;">🛵 कोई requests नहीं</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = '';
-    
+
     requests.reverse().forEach(request => {
         const phone = request[0] || 'N/A';
         const otp = request[1] || 'N/A';
@@ -362,9 +388,9 @@ function displayDeliveryBoyRequests(requests) {
         const requestTime = request[3] || 'N/A';
         const name = request[5] || '';
         const loginCode = request[6] || '';
-        
+
         const statusClass = status.toLowerCase().replace(' ', '-');
-        
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><strong>${phone}</strong></td>
@@ -395,14 +421,14 @@ function displayDeliveryBoyRequests(requests) {
 function displayDeliveryBoyStats(stats) {
     const tbody = document.getElementById('deliveryBoysStatsBody');
     document.getElementById('activeDeliveryBoysCount').textContent = stats.length;
-    
+
     if (!stats || stats.length === 0) {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;">📊 कोई delivery boys नहीं</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = '';
-    
+
     stats.forEach(stat => {
         const phone = stat[0] || 'N/A';
         const name = stat[1] || '—';
@@ -412,10 +438,10 @@ function displayDeliveryBoyStats(stats) {
         const isLoggedIn = stat[5] || 'No';
         const deliveries = stat[6] || '0';
         const earnings = stat[7] || '0';
-        
+
         const statusClass = status.toLowerCase();
         const isOnline = isLoggedIn === 'Yes';
-        
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><strong>${phone}</strong></td>
@@ -449,25 +475,25 @@ function displayRatings(ratings) {
     const tbody = document.getElementById('ratingsBody');
     document.getElementById('ratingsCount').textContent = ratings.length;
     document.getElementById('ratingsTabCount').textContent = ratings.length;
-    
+
     if (!ratings || ratings.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;">⭐ कोई ratings नहीं</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = '';
-    
+
     ratings.reverse().forEach(rating => {
         const orderId = rating[0] || 'N/A';
         const ratingValue = rating[1] || '0';
         const comment = rating[2] || '—';
         const time = rating[3] || 'N/A';
-        
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><strong>${orderId}</strong></td>
             <td>${displayStars(ratingValue)}</td>
-            <td>${comment}</td>
+            <td style="max-width:200px;">${comment}</td>
             <td style="font-size:11px;">${time}</td>
         `;
         tbody.appendChild(row);
@@ -480,23 +506,23 @@ function displayRatings(ratings) {
 function displayBlockedUsers(users) {
     const tbody = document.getElementById('usersBody');
     document.getElementById('usersCount').textContent = users.length;
-    
+
     if (!users || users.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;">👤 कोई users नहीं</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = '';
-    
+
     users.forEach(user => {
         const phone = user[0] || 'N/A';
         const name = user[1] || '—';
         const status = user[2] || 'Active';
         const blockedTime = user[3] || '—';
         const reason = user[4] || '—';
-        
+
         const statusClass = status.toLowerCase();
-        
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><strong>${phone}</strong></td>
@@ -522,7 +548,7 @@ function displayBlockedUsers(users) {
 function displayStars(rating) {
     const ratingNum = parseInt(rating) || 0;
     let stars = '<span class="rating-stars-display">';
-    
+
     for (let i = 1; i <= 5; i++) {
         if (i <= ratingNum) {
             stars += '<span class="rating-star-filled">⭐</span>';
@@ -530,7 +556,7 @@ function displayStars(rating) {
             stars += '<span class="rating-star-empty">☆</span>';
         }
     }
-    
+
     stars += `<span class="rating-value">${ratingNum}.0</span></span>`;
     return stars;
 }
@@ -543,7 +569,7 @@ function updateStats(orders) {
     const pending = orders.filter(o => (o[13] || 'Pending') === 'Pending').length;
     const confirmed = orders.filter(o => o[13] === 'Confirmed').length;
     const revenue = orders.reduce((sum, o) => sum + parseFloat(o[8] || '0'), 0);
-    
+
     document.getElementById('totalOrders').textContent = total;
     document.getElementById('pendingOrders').textContent = pending;
     document.getElementById('confirmedOrders').textContent = confirmed;
@@ -554,7 +580,7 @@ function updateStats(orders) {
 function updateDeliveryBoysStats(requests) {
     const approved = requests.filter(r => r[2] === 'Approved').length;
     const pending = requests.filter(r => r[2] === 'Pending Approval').length;
-    
+
     document.getElementById('totalDeliveryBoys').textContent = approved;
     document.getElementById('pendingRequests').textContent = pending;
 }
@@ -564,7 +590,7 @@ function updateRatingsStats(ratings) {
         document.getElementById('averageRating').textContent = '0.0';
         return;
     }
-    
+
     const totalRating = ratings.reduce((sum, r) => sum + parseFloat(r[1] || '0'), 0);
     const avg = (totalRating / ratings.length).toFixed(1);
     document.getElementById('averageRating').textContent = avg;
@@ -581,7 +607,7 @@ async function updateStatus(orderId, status) {
     try {
         const response = await fetch(`${API_URL}?action=updateStatus&orderId=${orderId}&status=${status}`);
         const data = await response.json();
-        
+
         if (data.success) {
             playNotificationSound();
             alert('✅ Order ' + orderId + ' ' + status + ' हो गया!');
@@ -599,11 +625,11 @@ async function updateStatus(orderId, status) {
 // ============================================
 async function approveDeliveryBoy(phone) {
     const name = document.getElementById(`nameInput_${phone}`)?.value || 'Delivery Boy';
-    
+
     try {
         const response = await fetch(`${API_URL}?action=approveDeliveryBoy&phone=${phone}&name=${encodeURIComponent(name)}`);
         const data = await response.json();
-        
+
         if (data.success) {
             playNotificationSound();
             alert('✅ Delivery Boy approved! Login Code: ' + (data.loginCode || 'N/A'));
@@ -621,7 +647,7 @@ async function rejectDeliveryBoy(phone) {
     try {
         const response = await fetch(`${API_URL}?action=rejectDeliveryBoy&phone=${phone}`);
         const data = await response.json();
-        
+
         if (data.success) {
             playNotificationSound();
             alert('❌ Delivery Boy rejected!');
@@ -637,11 +663,11 @@ async function rejectDeliveryBoy(phone) {
 // ============================================
 async function blockDeliveryBoy(phone) {
     if (!confirm('क्या आप इस delivery boy को block करना चाहते हैं?')) return;
-    
+
     try {
         const response = await fetch(`${API_URL}?action=blockDeliveryBoy&phone=${phone}`);
         const data = await response.json();
-        
+
         if (data.success) {
             playNotificationSound();
             alert('🚫 Delivery Boy blocked!');
@@ -657,7 +683,7 @@ async function unblockDeliveryBoy(phone) {
     try {
         const response = await fetch(`${API_URL}?action=unblockDeliveryBoy&phone=${phone}`);
         const data = await response.json();
-        
+
         if (data.success) {
             playNotificationSound();
             alert('✅ Delivery Boy unblocked!');
@@ -686,13 +712,13 @@ function closeBlockUserModal() {
 
 async function confirmBlockUser() {
     const reason = document.getElementById('blockReasonInput')?.value || 'No reason';
-    
+
     if (!currentBlockUserPhone) return;
-    
+
     try {
         const response = await fetch(`${API_URL}?action=blockUser&phone=${currentBlockUserPhone}&reason=${encodeURIComponent(reason)}`);
         const data = await response.json();
-        
+
         if (data.success) {
             playNotificationSound();
             alert('🚫 User blocked!');
@@ -708,7 +734,7 @@ async function unblockUser(phone) {
     try {
         const response = await fetch(`${API_URL}?action=unblockUser&phone=${phone}`);
         const data = await response.json();
-        
+
         if (data.success) {
             playNotificationSound();
             alert('✅ User unblocked!');
@@ -725,10 +751,10 @@ async function unblockUser(phone) {
 function openAssignModal(orderId) {
     currentAssignOrderId = orderId;
     document.getElementById('assignOrderId').textContent = orderId;
-    
+
     const select = document.getElementById('deliveryBoySelect');
     select.innerHTML = '<option value="">-- चुनें --</option>';
-    
+
     deliveryBoysList.forEach(deliveryBoy => {
         const phone = deliveryBoy[0] || '';
         const name = deliveryBoy[5] || 'Delivery Boy';
@@ -737,7 +763,7 @@ function openAssignModal(orderId) {
         option.textContent = `${name} (${phone})`;
         select.appendChild(option);
     });
-    
+
     document.getElementById('assignModal').classList.remove('hidden');
 }
 
@@ -748,16 +774,16 @@ function closeAssignModal() {
 
 async function assignDeliveryBoy() {
     const phone = document.getElementById('deliveryBoySelect')?.value;
-    
+
     if (!phone || !currentAssignOrderId) {
         alert('⚠️ कृपया delivery boy चुनें');
         return;
     }
-    
+
     try {
         const response = await fetch(`${API_URL}?action=acceptOrder&orderId=${currentAssignOrderId}&phone=${phone}`);
         const data = await response.json();
-        
+
         if (data.success) {
             playNotificationSound();
             alert('✅ Delivery Boy assigned!');
@@ -830,4 +856,4 @@ console.log('🛵 Delivery Boy System: Enabled');
 console.log('⭐ Rating System: Enabled');
 console.log('👤 User Management: Enabled');
 console.log('🚫 Block System: Enabled');
-console.log('🔔 Popup Control: Max ' + MAX_NOTIFICATION_SHOW + ' times');
+console.log('🔔 Popup Control: Per-order ' + MAX_POPUP_SHOW_PER_ITEM + ' times');
