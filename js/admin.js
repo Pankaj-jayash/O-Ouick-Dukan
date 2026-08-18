@@ -5,7 +5,7 @@
 // ============================================
 
 // ⚠️ अपना Google Apps Script Web App URL डालें
-const API_URL = 'https://script.google.com/macros/s/AKfycby63XroGq8saE7zs4R38a9AMx-xCSDdUJopHGea7z6O-f7z_2Y8PKR3RdaHeQVxbfBz/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzLqypWbYkNv78UAsYuGsVYLmX0KxAVXP1hRXbQYvFEDBAFx6MFAkW56trvh7U4x7MJ/exec';
 
 let soundEnabled = true;
 let lastOrderCount = 0;
