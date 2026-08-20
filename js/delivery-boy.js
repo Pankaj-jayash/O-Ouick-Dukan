@@ -5,7 +5,7 @@
 // ============================================
 
 // ⚠️ अपना Google Apps Script Web App URL डालें
-const API_URL = 'https://script.google.com/macros/s/AKfycbxS6k4D0ANiiX7pQOH0l_T-CyhqLpA4np1-BvzfmZkqrV6N2qUxim_Xs1MAiXHjEZWG/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzJUHVKP2jkHlc7xJInCTl6XNN0JlH7kqqDoLlztfs0Yg_s1ZAAWzRI0tUNt9eZgW-r/exec';
 
 class DeliveryBoyApp {
     constructor() {
