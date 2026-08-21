@@ -2,443 +2,282 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Dukan - Admin Panel</title>
-    <link rel="stylesheet" href="cast/admin.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#FF9800">
+    <title>Quick Dukan - Delivery Boy</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Delivery Boy CSS -->
+    <link rel="stylesheet" href="cast/dev-boy.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="header-left">
-                <span class="header-logo">🛒</span>
-                <div class="header-title">
-                    <h1>Quick Dukan Admin</h1>
-                    <p>Real-time Order Management</p>
+    <!-- ============================================ -->
+    <!-- LOGIN SCREEN -->
+    <!-- ============================================ -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-logo">🛵</div>
+            <h1 class="login-title">Delivery Boy Login</h1>
+            <p class="login-subtitle">Quick Dukan</p>
+
+            <!-- Login Method Tabs -->
+            <div class="login-method-tabs">
+                <button class="login-method-tab active" data-method="code" onclick="switchLoginMethod('code')">
+                    🔑 Login Code
+                </button>
+                <button class="login-method-tab" data-method="otp" onclick="switchLoginMethod('otp')">
+                    📱 OTP (पहली बार)
+                </button>
+            </div>
+
+            <div class="login-form">
+                <!-- Phone Input -->
+                <div class="login-input-group">
+                    <span class="login-input-icon">📱</span>
+                    <input 
+                        type="tel" 
+                        id="loginPhone" 
+                        class="login-input" 
+                        placeholder="मोबाइल नंबर डालें"
+                        maxlength="10"
+                        inputmode="numeric"
+                        autocomplete="tel"
+                    >
+                </div>
+
+                <!-- Login Code Method -->
+                <div id="loginCodeSection" class="login-method-section">
+                    <div class="login-input-group">
+                        <span class="login-input-icon">🔑</span>
+                        <input 
+                            type="text" 
+                            id="loginCodeInput" 
+                            class="login-input" 
+                            placeholder="Login Code डालें"
+                            maxlength="6"
+                            autocomplete="off"
+                        >
+                    </div>
+
+                    <button id="loginWithCodeBtn" class="login-btn">
+                        ✅ Login करें
+                    </button>
+
+                    <button id="forgetCodeBtn" class="forget-btn">
+                        🔄 Login Code भूल गए?
+                    </button>
+                </div>
+
+                <!-- OTP Method -->
+                <div id="otpSection" class="login-method-section hidden">
+                    <button id="sendOtpBtn" class="login-btn">
+                        🔐 OTP भेजें
+                    </button>
+
+                    <div id="otpInputSection" class="otp-section hidden">
+                        <div class="login-input-group">
+                            <span class="login-input-icon">🔑</span>
+                            <input 
+                                type="text" 
+                                id="otpInput" 
+                                class="login-input" 
+                                placeholder="OTP डालें"
+                                maxlength="6"
+                                inputmode="numeric"
+                            >
+                        </div>
+
+                        <div id="otpTimer" class="otp-timer">⏱️ 10:00</div>
+
+                        <button id="verifyOtpBtn" class="login-btn verify-btn">
+                            ✅ Verify & Login
+                        </button>
+
+                        <button id="resendOtpBtn" class="resend-btn hidden">
+                            🔄 OTP दोबारा भेजें
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="header-actions">
-                <button class="btn btn-sound" id="soundToggle" onclick="toggleSound()">
-                    🔊 Sound ON
-                </button>
-                <button class="btn btn-refresh" onclick="refreshAll()">
-                    🔄 Refresh
-                </button>
+
+            <div id="loginStatus" class="login-status"></div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- MAIN APP SCREEN -->
+    <!-- ============================================ -->
+    <div id="mainApp" class="main-app hidden">
+        <!-- Header -->
+        <div class="delivery-header">
+            <div class="delivery-header-left">
+                <span class="delivery-boy-icon">🛵</span>
+                <div>
+                    <div class="delivery-boy-name" id="deliveryBoyName">Delivery Boy</div>
+                    <div class="delivery-boy-status" id="deliveryBoyStatus">🟢 Active</div>
+                </div>
+            </div>
+            <div class="delivery-header-right">
+                <button id="refreshOrdersBtn" class="header-btn">🔄</button>
+                <button id="messageBtn" class="header-btn msg-btn" title="Admin Messages">📬</button>
+                <button id="logoutBtn" class="header-btn logout-btn" title="Logout">🚪</button>
             </div>
         </div>
 
-        <!-- Stats -->
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-icon">📦</div>
-                <div class="stat-value" id="totalOrders">0</div>
-                <div class="stat-label">Total Orders</div>
+        <!-- 🆕 Admin Message Banner -->
+        <div id="adminMessageBanner" class="admin-message-banner hidden">
+            <div class="admin-message-content">
+                <span class="admin-message-icon">📢</span>
+                <div class="admin-message-text">
+                    <span class="admin-message-title" id="adminMessageTitle">Admin Message</span>
+                    <span class="admin-message-body" id="adminMessageBody">Message</span>
+                </div>
+                <button class="admin-message-close" onclick="closeAdminMessage()">✕</button>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">⏳</div>
-                <div class="stat-value" id="pendingOrders" style="color:#E65100;">0</div>
-                <div class="stat-label">Pending</div>
+        </div>
+
+        <!-- 🆕 Happy/Funny Message Toast -->
+        <div id="happyMessageToast" class="happy-message-toast hidden">
+            <span id="happyMessageText">🎉 शाबाश!</span>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="delivery-stats-bar">
+            <div class="delivery-stat">
+                <span class="delivery-stat-icon">📦</span>
+                <span class="delivery-stat-value" id="totalDeliveries">0</span>
+                <span class="delivery-stat-label">Deliveries</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">✅</div>
-                <div class="stat-value" id="confirmedOrders" style="color:#2E7D32;">0</div>
-                <div class="stat-label">Confirmed</div>
+            <div class="delivery-stat">
+                <span class="delivery-stat-icon">💰</span>
+                <span class="delivery-stat-value" id="totalEarnings">₹0</span>
+                <span class="delivery-stat-label">Earnings</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">💰</div>
-                <div class="stat-value" id="totalRevenue">₹0</div>
-                <div class="stat-label">Total Revenue</div>
+            <div class="delivery-stat">
+                <span class="delivery-stat-icon">📅</span>
+                <span class="delivery-stat-value" id="todayDeliveries">0</span>
+                <span class="delivery-stat-label">Today</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">🛵</div>
-                <div class="stat-value" id="totalDeliveryBoys" style="color:#FF9800;">0</div>
-                <div class="stat-label">Delivery Boys</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">💳</div>
-                <div class="stat-value" id="pendingPayments" style="color:#FF9800;">0</div>
-                <div class="stat-label">Pending Payments</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📋</div>
-                <div class="stat-value" id="pendingRequests" style="color:#9C27B0;">0</div>
-                <div class="stat-label">New Requests</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">⭐</div>
-                <div class="stat-value" id="averageRating" style="color:#FFD700;">0.0</div>
-                <div class="stat-label">Avg Rating</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">🚫</div>
-                <div class="stat-value" id="blockedUsers" style="color:#f44336;">0</div>
-                <div class="stat-label">Blocked Users</div>
+            <div class="delivery-stat">
+                <span class="delivery-stat-icon">⏱️</span>
+                <span class="delivery-stat-value" id="loginTime">--:--</span>
+                <span class="delivery-stat-label">Login</span>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="admin-tabs">
-            <button class="admin-tab active" data-tab="orders" onclick="switchTab('orders')">
-                📋 Orders <span class="tab-badge" id="ordersTabCount">0</span>
+        <div class="delivery-tabs">
+            <button class="delivery-tab active" data-tab="orders">
+                📦 Orders <span class="tab-badge" id="ordersBadge">0</span>
             </button>
-            <button class="admin-tab" data-tab="payments" onclick="switchTab('payments')">
-                💳 Payments <span class="tab-badge" id="paymentsTabCount">0</span>
-            </button>
-            <button class="admin-tab" data-tab="deliveryBoys" onclick="switchTab('deliveryBoys')">
-                🛵 Delivery Boys <span class="tab-badge" id="deliveryBoysTabCount">0</span>
-            </button>
-            <button class="admin-tab" data-tab="ratings" onclick="switchTab('ratings')">
-                ⭐ Ratings <span class="tab-badge" id="ratingsTabCount">0</span>
-            </button>
-            <button class="admin-tab" data-tab="users" onclick="switchTab('users')">
-                👤 Users <span class="tab-badge" id="usersTabCount">0</span>
+            <button class="delivery-tab" data-tab="map">
+                🗺️ Live Map
             </button>
         </div>
 
-        <!-- ============================================ -->
-        <!-- ORDERS TAB -->
-        <!-- ============================================ -->
+        <!-- Orders List -->
         <div id="ordersTab" class="tab-content active">
-            <div class="orders-container">
-                <div class="orders-header">
-                    <h2>
-                        📋 Orders
-                        <span class="orders-count" id="ordersCount">0</span>
-                    </h2>
-                    <span style="font-size:12px;color:#ccc;">Auto-refresh: 5 sec</span>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Date</th>
-                                <th>Customer</th>
-                                <th>Phone</th>
-                                <th>Address</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th>Delivery Boy</th>
-                                <th>Rating</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ordersBody">
-                            <tr>
-                                <td colspan="10" style="text-align:center;padding:30px;color:#999;">
-                                    🔄 Loading...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div id="assignedOrders" class="assigned-orders">
+                <!-- Orders load होंगे यहाँ -->
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- PAYMENTS TAB -->
-        <!-- ============================================ -->
-        <div id="paymentsTab" class="tab-content">
-            <div class="orders-container">
-                <div class="orders-header">
-                    <h2>
-                        💳 Payments
-                        <span class="orders-count" id="paymentsCount">0</span>
-                    </h2>
-                    <span style="font-size:12px;color:#ccc;">Payment management</span>
-                </div>
-                <div class="payment-search-section">
-                    <div class="payment-search-container">
-                        <input type="text" id="paymentSearchInput" class="payment-search-input" placeholder="🔍 Order ID, Phone, Amount खोजें..." onkeyup="searchPayments()">
-                    </div>
-                </div>
-                <div class="payment-filters">
-                    <button class="payment-filter-btn active" data-filter="all" onclick="filterPayments('all')">📋 All</button>
-                    <button class="payment-filter-btn" data-filter="Pending" onclick="filterPayments('Pending')">⏳ Pending</button>
-                    <button class="payment-filter-btn" data-filter="Verified" onclick="filterPayments('Verified')">✅ Verified</button>
-                    <button class="payment-filter-btn" data-filter="Cancelled" onclick="filterPayments('Cancelled')">❌ Cancelled</button>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Payment ID</th>
-                                <th>Order ID</th>
-                                <th>User</th>
-                                <th>Phone</th>
-                                <th>Items</th>
-                                <th>Product ₹</th>
-                                <th>Charge ₹</th>
-                                <th>Total ₹</th>
-                                <th>Method</th>
-                                <th>Time</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="paymentsBody">
-                            <tr>
-                                <td colspan="12" style="text-align:center;padding:30px;color:#999;">
-                                    🔄 Loading...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- DELIVERY BOYS TAB -->
-        <!-- ============================================ -->
-        <div id="deliveryBoysTab" class="tab-content">
-            <!-- Login Requests -->
-            <div class="orders-container" style="margin-bottom:20px;">
-                <div class="orders-header">
-                    <h2>
-                        🛵 Login Requests
-                        <span class="orders-count" id="deliveryBoysCount">0</span>
-                    </h2>
-                    <span style="font-size:12px;color:#ccc;">Pending approval</span>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Phone</th>
-                                <th>OTP</th>
-                                <th>Request Time</th>
-                                <th>Status</th>
-                                <th>Name</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="deliveryBoysBody">
-                            <tr>
-                                <td colspan="6" style="text-align:center;padding:30px;color:#999;">
-                                    🔄 Loading...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Active Delivery Boys Stats -->
-            <div class="orders-container">
-                <div class="orders-header">
-                    <h2>
-                        📊 Delivery Boys Performance
-                        <span class="orders-count" id="activeDeliveryBoysCount">0</span>
-                    </h2>
-                    <span style="font-size:12px;color:#ccc;">Live stats</span>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Phone</th>
-                                <th>Name</th>
-                                <th>Status</th>
-                                <th>Login Time</th>
-                                <th>Online</th>
-                                <th>Deliveries</th>
-                                <th>Today</th>
-                                <th>Earnings</th>
-                                <th>Message</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="deliveryBoysStatsBody">
-                            <tr>
-                                <td colspan="10" style="text-align:center;padding:30px;color:#999;">
-                                    🔄 Loading...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- RATINGS TAB -->
-        <!-- ============================================ -->
-        <div id="ratingsTab" class="tab-content">
-            <div class="orders-container">
-                <div class="orders-header">
-                    <h2>
-                        ⭐ Order Ratings
-                        <span class="orders-count" id="ratingsCount">0</span>
-                    </h2>
-                    <span style="font-size:12px;color:#ccc;">Customer feedback</span>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Rating</th>
-                                <th>Comment</th>
-                                <th>Time</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ratingsBody">
-                            <tr>
-                                <td colspan="4" style="text-align:center;padding:30px;color:#999;">
-                                    🔄 Loading...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- USERS TAB -->
-        <!-- ============================================ -->
-        <div id="usersTab" class="tab-content">
-            <div class="orders-container">
-                <div class="orders-header">
-                    <h2>
-                        👤 Blocked Users
-                        <span class="orders-count" id="usersCount">0</span>
-                    </h2>
-                    <span style="font-size:12px;color:#ccc;">User management</span>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Phone</th>
-                                <th>Name</th>
-                                <th>Status</th>
-                                <th>Blocked Time</th>
-                                <th>Reason</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersBody">
-                            <tr>
-                                <td colspan="6" style="text-align:center;padding:30px;color:#999;">
-                                    🔄 Loading...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+        <!-- Map View -->
+        <div id="mapTab" class="tab-content">
+            <div id="deliveryMap" class="delivery-map"></div>
+            <div id="mapInfo" class="map-info">
+                <span class="map-info-distance">📍 -- km</span>
+                <span class="map-info-eta">⏱️ -- min</span>
             </div>
         </div>
     </div>
 
-    <!-- Notification Popup -->
-    <div class="notification-popup" id="notificationPopup">
-        <div class="notification-header">
-            <span class="notification-icon">🔔</span>
-            <span class="notification-title">नया ऑर्डर आया है!</span>
-        </div>
-        <div class="notification-body" id="notificationBody">
-            Loading...
-        </div>
-        <div class="notification-actions">
-            <button class="notification-btn confirm" onclick="notifConfirm()">✅ Confirm</button>
-            <button class="notification-btn view" onclick="notifView()">👁️ View</button>
-            <button class="notification-btn cancel" onclick="notifCancel()">❌ Cancel</button>
-        </div>
-    </div>
-
-    <!-- Delivery Boy Request Notification -->
-    <div class="notification-popup" id="deliveryBoyNotification" style="border-left-color:#9C27B0;">
-        <div class="notification-header">
-            <span class="notification-icon">🛵</span>
-            <span class="notification-title">नई Delivery Boy Request!</span>
-        </div>
-        <div class="notification-body" id="deliveryBoyNotificationBody">
-            Loading...
-        </div>
-        <div class="notification-actions">
-            <button class="notification-btn confirm" onclick="viewDeliveryBoys()">👁️ View</button>
-        </div>
-    </div>
-
-    <!-- Assign Delivery Boy Modal -->
-    <div class="assign-modal hidden" id="assignModal">
-        <div class="assign-overlay"></div>
-        <div class="assign-content">
-            <div class="assign-header">
-                <h3>🛵 Delivery Boy Assign करें</h3>
-                <button class="close-btn" onclick="closeAssignModal()">✕</button>
+    <!-- ============================================ -->
+    <!-- ORDER DETAILS MODAL -->
+    <!-- ============================================ -->
+    <div id="orderDetailsModal" class="order-details-modal hidden">
+        <div class="order-details-overlay"></div>
+        <div class="order-details-content">
+            <div class="order-details-header">
+                <h3>📦 Order Details</h3>
+                <button id="closeOrderDetails" class="close-btn">✕</button>
             </div>
-            <div class="assign-body">
-                <p class="assign-order-id">Order: <strong id="assignOrderId"></strong></p>
-                <div class="assign-form">
-                    <label class="assign-label">Delivery Boy चुनें:</label>
-                    <select id="deliveryBoySelect" class="assign-select">
-                        <option value="">-- चुनें --</option>
-                    </select>
-                </div>
-                <div class="assign-actions">
-                    <button class="assign-btn confirm" onclick="assignDeliveryBoy()">✅ Assign</button>
-                    <button class="assign-btn cancel" onclick="closeAssignModal()">❌ Cancel</button>
-                </div>
+            <div id="orderDetailsBody" class="order-details-body"></div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- DELIVERED CONFIRMATION -->
+    <!-- ============================================ -->
+    <div id="deliveredModal" class="delivered-modal hidden">
+        <div class="delivered-overlay"></div>
+        <div class="delivered-content">
+            <div class="delivered-icon">🎉</div>
+            <h3 class="delivered-title">Order Delivered!</h3>
+            <p class="delivered-message">क्या आपने order deliver कर दिया है?</p>
+            <div class="delivered-buttons">
+                <button id="confirmDeliveredBtn" class="delivered-btn confirm">✅ हाँ, Delivered</button>
+                <button id="cancelDeliveredBtn" class="delivered-btn cancel">❌ नहीं</button>
             </div>
         </div>
     </div>
 
-    <!-- Block User Modal -->
-    <div class="assign-modal hidden" id="blockUserModal">
-        <div class="assign-overlay"></div>
-        <div class="assign-content">
-            <div class="assign-header">
-                <h3>🚫 User Block करें</h3>
-                <button class="close-btn" onclick="closeBlockUserModal()">✕</button>
-            </div>
-            <div class="assign-body">
-                <p class="assign-order-id">Phone: <strong id="blockUserPhone"></strong></p>
-                <div class="assign-form">
-                    <label class="assign-label">Block Reason:</label>
-                    <input type="text" id="blockReasonInput" class="assign-select" placeholder="Reason लिखें...">
-                </div>
-                <div class="assign-actions">
-                    <button class="assign-btn confirm" onclick="confirmBlockUser()" style="background:#f44336;">🚫 Block User</button>
-                    <button class="assign-btn cancel" onclick="closeBlockUserModal()">❌ Cancel</button>
-                </div>
+    <!-- ============================================ -->
+    <!-- LOGOUT CONFIRMATION -->
+    <!-- ============================================ -->
+    <div id="logoutModal" class="delivered-modal hidden">
+        <div class="delivered-overlay"></div>
+        <div class="delivered-content">
+            <div class="delivered-icon">🚪</div>
+            <h3 class="delivered-title">Logout करें?</h3>
+            <p class="delivered-message">क्या आप logout करना चाहते हैं?</p>
+            <div class="delivered-buttons">
+                <button id="confirmLogoutBtn" class="delivered-btn confirm">✅ हाँ, Logout</button>
+                <button id="cancelLogoutBtn" class="delivered-btn cancel">❌ नहीं</button>
             </div>
         </div>
     </div>
 
-    <!-- 🆕 Send Message Modal -->
-    <div class="assign-modal hidden" id="messageModal">
-        <div class="assign-overlay"></div>
-        <div class="assign-content">
-            <div class="assign-header">
-                <h3>💬 Message भेजें</h3>
-                <button class="close-btn" onclick="closeMessageModal()">✕</button>
-            </div>
-            <div class="assign-body">
-                <p class="assign-order-id">Delivery Boy: <strong id="messagePhone"></strong></p>
-                <div class="assign-form">
-                    <label class="assign-label">Message Type:</label>
-                    <select id="messageType" class="assign-select">
-                        <option value="happy">😊 Happy</option>
-                        <option value="funny">😂 Funny</option>
-                        <option value="notice">📢 Notice</option>
-                        <option value="warning">⚠️ Warning</option>
-                    </select>
-                </div>
-                <div class="assign-form">
-                    <label class="assign-label">Message:</label>
-                    <textarea id="messageText" class="assign-select" placeholder="Message लिखें..." rows="3"></textarea>
-                </div>
-                <div class="assign-actions">
-                    <button class="assign-btn confirm" onclick="sendMessage()">📤 भेजें</button>
-                    <button class="assign-btn cancel" onclick="closeMessageModal()">❌ Cancel</button>
-                </div>
+    <!-- ============================================ -->
+    <!-- FORGET CODE MODAL -->
+    <!-- ============================================ -->
+    <div id="forgetCodeModal" class="delivered-modal hidden">
+        <div class="delivered-overlay"></div>
+        <div class="delivered-content">
+            <div class="delivered-icon">🔄</div>
+            <h3 class="delivered-title">Login Code भूल गए?</h3>
+            <p class="delivered-message">नया code admin approval के बाद मिलेगा।</p>
+            <div class="delivered-buttons">
+                <button id="confirmForgetBtn" class="delivered-btn confirm">✅ Request भेजें</button>
+                <button id="cancelForgetBtn" class="delivered-btn cancel">❌ Cancel</button>
             </div>
         </div>
     </div>
 
-    <script src="java/admin.js"></script>
+    <!-- 🆕 Admin Messages Modal -->
+    <div id="adminMessagesModal" class="delivered-modal hidden">
+        <div class="delivered-overlay"></div>
+        <div class="delivered-content">
+            <div class="delivered-icon">📬</div>
+            <h3 class="delivered-title">Admin Messages</h3>
+            <div id="adminMessagesList" class="admin-messages-list">
+                <!-- Messages load होंगे यहाँ -->
+            </div>
+            <div class="delivered-buttons">
+                <button id="closeAdminMessages" class="delivered-btn cancel">❌ बंद करें</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Delivery Boy JS -->
+    <script src="java/dev-boy.js"></script>
 </body>
 </html>
