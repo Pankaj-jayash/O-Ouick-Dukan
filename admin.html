@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quick Dukan - Admin Panel</title>
+    <link rel="stylesheet" href="csss/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Critical Mobile Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f0f2f5;
+            overflow-x: hidden;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #FF6B00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 12px;
+            background: #1a1a2e;
+            color: white;
+            z-index: 999999;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideUp 0.4s ease;
+        }
+        .toast.show {
+            display: block;
+        }
+        .toast.success { background: #2E7D32; }
+        .toast.error { background: #c62828; }
+        .toast.warning { background: #E65100; }
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        
+        /* Floating Notification Badge */
+        .notif-badge-float {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #f44336;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            z-index: 9999;
+            display: none;
+            animation: pulse 1s infinite;
+            box-shadow: 0 2px 10px rgba(244,67,54,0.4);
+        }
+        .notif-badge-float.show {
+            display: block;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Notification Badge -->
+    <div class="notif-badge-float" id="notifBadgeFloat">🔔 0</div>
+
+    <!-- Mobile Bottom Navigation -->
+    <div class="bottom-nav" id="bottomNav">
+        <div class="bottom-nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+            <span class="nav-badge" id="navDashBadge"></span>
+        </div>
+        <div class="bottom-nav-item" data-tab="orders" onclick="switchTab('orders')">
+            <i class="fas fa-box"></i>
+            <span>Orders</span>
+            <span class="nav-badge" id="navOrdersBadge">0</span>
+        </div>
+        <div class="bottom-nav-item" data-tab="deliveryBoys" onclick="switchTab('deliveryBoys')">
+            <i class="fas fa-truck"></i>
+            <span>Delivery</span>
+            <span class="nav-badge" id="navDeliveryBadge">0</span>
+        </div>
+        <div class="bottom-nav-item" data-tab="users" onclick="switchTab('users')">
+            <i class="fas fa-users"></i>
+            <span>Users</span>
+            <span class="nav-badge" id="navUsersBadge">0</span>
+        </div>
+        <div class="bottom-nav-item" data-tab="more" onclick="toggleMoreMenu()">
+            <i class="fas fa-ellipsis-h"></i>
+            <span>More</span>
+        </div>
+    </div>
+
+    <!-- More Menu (Mobile) -->
+    <div class="more-menu" id="moreMenu">
+        <div class="more-menu-item" onclick="switchTab('payments')">
+            <i class="fas fa-money-bill-wave"></i> Payments
+        </div>
+        <div class="more-menu-item" onclick="switchTab('products')">
+            <i class="fas fa-cube"></i> Products
+        </div>
+        <div class="more-menu-item" onclick="switchTab('reports')">
+            <i class="fas fa-file-alt"></i> Reports
+        </div>
+        <div class="more-menu-item" onclick="switchTab('notifications')">
+            <i class="fas fa-bell"></i> Notifications
+        </div>
+        <div class="more-menu-item" onclick="switchTab('settings')">
+            <i class="fas fa-cog"></i> Settings
+        </div>
+        <div class="more-menu-item" onclick="switchTab('support')">
+            <i class="fas fa-headset"></i> Support
+        </div>
+        <div class="more-menu-item" onclick="switchTab('emergency')">
+            <i class="fas fa-exclamation-triangle"></i> Emergency
+        </div>
+        <div class="more-menu-item" onclick="adminLogout()" style="color:#f44336;">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </div>
+    </div>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="main-content" id="mainContent">
+
+        <!-- ===== HEADER ===== -->
+        <div class="mobile-header">
+            <div class="header-left">
+                <span class="header-logo">🛒</span>
+                <div>
+                    <h1>Quick Dukan</h1>
+                    <span class="header-sub">Admin Panel</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" onclick="toggleSound()" id="soundBtn">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button class="header-btn" onclick="refreshAll()">
+                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                </button>
+                <span class="live-dot-small"></span>
+            </div>
+        </div>
+
+        <!-- ===== DASHBOARD TAB ===== -->
+        <div id="dashboardTab" class="tab-content active">
+            <!-- Live Stats Cards -->
+            <div class="stats-grid-mobile">
+                <div class="stat-card-mobile" onclick="switchTab('orders')">
+                    <div class="stat-icon-mobile" style="background:#FFF3E0;color:#FF6B00;">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="stat-info-mobile">
+                        <span class="stat-value-mobile" id="mTotalOrders">0</span>
+                        <span class="stat-label-mobile">Total Orders</span>
+                    </div>
+                </div>
+                <div class="stat-card-mobile" onclick="switchTab('orders')">
+                    <div class="stat-icon-mobile" style="background:#FFEBEE;color:#f44336;">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info-mobile">
+                        <span class="stat-value-mobile" id="mPendingOrders">0</span>
+                        <span class="stat-label-mobile">Pending</span>
+                    </div>
+                </div>
+                <div class="stat-card-mobile" onclick="switchTab('orders')">
+                    <div class="stat-icon-mobile" style="background:#E8F5E9;color:#2E7D32;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info-mobile">
+                        <span class="stat-value-mobile" id="mDeliveredOrders">0</span>
+                        <span class="stat-label-mobile">Delivered</span>
+                    </div>
+                </div>
+                <div class="stat-card-mobile" onclick="switchTab('payments')">
+                    <div class="stat-icon-mobile" style="background:#E3F2FD;color:#1565C0;">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-info-mobile">
+                        <span class="stat-value-mobile" id="mRevenue">₹0</span>
+                        <span class="stat-label-mobile">Revenue</span>
+                    </div>
+                </div>
+                <div class="stat-card-mobile" onclick="switchTab('users')">
+                    <div class="stat-icon-mobile" style="background:#F3E5F5;color:#9C27B0;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info-mobile">
+                        <span class="stat-value-mobile" id="mTotalUsers">0</span>
+                        <span class="stat-label-mobile">Users</span>
+                    </div>
+                </div>
+                <div class="stat-card-mobile" onclick="switchTab('deliveryBoys')">
+                    <div class="stat-icon-mobile" style="background:#FFF8E1;color:#FF9800;">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="stat-info-mobile">
+                        <span class="stat-value-mobile" id="mDeliveryBoys">0</span>
+                        <span class="stat-label-mobile">Delivery Boys</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-clock"></i> Recent Orders</h3>
+                    <button class="view-all-btn" onclick="switchTab('orders')">View All →</button>
+                </div>
+                <div class="recent-list" id="recentOrdersList">
+                    <div class="loading-item">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-action" onclick="switchTab('orders')">
+                        <i class="fas fa-box"></i> Orders
+                    </button>
+                    <button class="quick-action" onclick="switchTab('deliveryBoys')">
+                        <i class="fas fa-user-plus"></i> Approve
+                    </button>
+                    <button class="quick-action" onclick="switchTab('notifications')">
+                        <i class="fas fa-bullhorn"></i> Broadcast
+                    </button>
+                    <button class="quick-action" onclick="switchTab('emergency')">
+                        <i class="fas fa-exclamation-triangle"></i> SOS
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== ORDERS TAB ===== -->
+        <div id="ordersTab" class="tab-content">
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-box"></i> Orders</h3>
+                    <span class="count-badge" id="ordersCountBadge">0</span>
+                </div>
+                <div class="filter-bar">
+                    <input type="text" id="orderSearch" placeholder="🔍 Search orders..." onkeyup="searchOrders(this.value)" class="search-input-mobile">
+                    <select id="orderStatusFilter" onchange="filterOrdersByStatus(this.value)" class="filter-select-mobile">
+                        <option value="">All</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="orders-list" id="ordersList">
+                    <div class="loading-item">Loading orders...</div>
+                </div>
+                <div class="load-more" id="loadMoreOrders">
+                    <button onclick="loadMoreOrders()">Load More</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== DELIVERY BOYS TAB ===== -->
+        <div id="deliveryBoysTab" class="tab-content">
+            <!-- Pending Requests -->
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-user-plus"></i> Pending Requests</h3>
+                    <span class="count-badge" id="pendingReqBadge">0</span>
+                </div>
+                <div class="delivery-requests" id="deliveryRequests">
+                    <div class="loading-item">Loading requests...</div>
+                </div>
+            </div>
+
+            <!-- Active Delivery Boys -->
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-truck"></i> Active Boys</h3>
+                    <span class="count-badge" id="activeBoysBadge">0</span>
+                </div>
+                <div class="delivery-list" id="deliveryBoysList">
+                    <div class="loading-item">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== USERS TAB ===== -->
+        <div id="usersTab" class="tab-content">
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-users"></i> Users</h3>
+                    <span class="count-badge" id="usersCountBadge">0</span>
+                </div>
+                <div class="filter-bar">
+                    <input type="text" id="userSearch" placeholder="🔍 Search users..." onkeyup="searchUsers(this.value)" class="search-input-mobile">
+                    <select id="userStatusFilter" onchange="filterUsersByStatus(this.value)" class="filter-select-mobile">
+                        <option value="">All</option>
+                        <option value="Active">Active</option>
+                        <option value="Blocked">Blocked</option>
+                    </select>
+                </div>
+                <div class="users-list" id="usersList">
+                    <div class="loading-item">Loading users...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAYMENTS TAB ===== -->
+        <div id="paymentsTab" class="tab-content">
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-money-bill-wave"></i> Payments</h3>
+                    <span class="count-badge" id="paymentsCountBadge">0</span>
+                </div>
+                <div class="filter-bar">
+                    <input type="text" id="paymentSearch" placeholder="🔍 Search..." onkeyup="searchPayments(this.value)" class="search-input-mobile">
+                    <select id="paymentStatusFilter" onchange="filterPaymentsByStatus(this.value)" class="filter-select-mobile">
+                        <option value="">All</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Verified">Verified</option>
+                        <option value="Refunded">Refunded</option>
+                    </select>
+                </div>
+                <div class="payments-list" id="paymentsList">
+                    <div class="loading-item">Loading payments...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PRODUCTS TAB ===== -->
+        <div id="productsTab" class="tab-content">
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-cube"></i> Products</h3>
+                    <button class="add-btn" onclick="showAddProductModal()">+ Add</button>
+                </div>
+                <div class="filter-bar">
+                    <input type="text" id="productSearch" placeholder="🔍 Search products..." onkeyup="searchProducts(this.value)" class="search-input-mobile">
+                </div>
+                <div class="products-list" id="productsList">
+                    <div class="loading-item">Loading products...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== REPORTS TAB ===== -->
+        <div id="reportsTab" class="tab-content">
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-file-alt"></i> Reports</h3>
+                </div>
+                <div class="report-buttons">
+                    <button class="report-btn" onclick="generateReport('daily')">📊 Daily</button>
+                    <button class="report-btn" onclick="generateReport('weekly')">📊 Weekly</button>
+                    <button class="report-btn" onclick="generateReport('monthly')">📊 Monthly</button>
+                </div>
+                <div class="report-content" id="reportContent">
+                    <div class="loading-item">Loading reports...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== NOTIFICATIONS TAB ===== -->
+        <div id="notificationsTab" class="tab-content">
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-bell"></i> Notifications</h3>
+                </div>
+                <div class="notif-sender">
+                    <input type="text" id="notifTitle" placeholder="Title..." class="sender-input-mobile">
+                    <textarea id="notifMessage" placeholder="Message..." class="sender-textarea-mobile" rows="3"></textarea>
+                    <button class="send-btn" onclick="sendBroadcast()">📢 Broadcast to All</button>
+                </div>
+                <div class="notif-history" id="notifHistory">
+                    <div class="loading-item">Loading history...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SETTINGS TAB ===== -->
+        <div id="settingsTab" class="tab-content">
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-cog"></i> Settings</h3>
+                </div>
+                <div class="settings-list">
+                    <div class="setting-item">
+                        <label>Show Call Button</label>
+                        <select id="settingShowCall" onchange="updateSetting('Show Call Button', this.value)">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Online Charge</label>
+                        <select id="settingOnlineCharge" onchange="updateSetting('Online Charge ON', this.value)">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Charge Min (₹)</label>
+                        <input type="number" id="settingChargeMin" onchange="updateSetting('Charge Min', this.value)" class="setting-input-mobile">
+                    </div>
+                    <div class="setting-item">
+                        <label>Charge Max (₹)</label>
+                        <input type="number" id="settingChargeMax" onchange="updateSetting('Charge Max', this.value)" class="setting-input-mobile">
+                    </div>
+                    <button class="danger-btn" onclick="clearAllData()">🗑️ Clear All Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SUPPORT TAB ===== -->
+        <div id="supportTab" class="tab-content">
+            <div class="mobile-section">
+                <div class="section-header-mobile">
+                    <h3><i class="fas fa-headset"></i> Support Tickets</h3>
+                    <span class="count-badge" id="supportBadge">0</span>
+                </div>
+                <div class="support-list" id="supportList">
+                    <div class="loading-item">Loading tickets...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== EMERGENCY TAB ===== -->
+        <div id="emergencyTab" class="tab-content">
+            <div class="mobile-section">
+                <div class="section-header-mobile" style="border-left-color:#f44336;">
+                    <h3><i class="fas fa-exclamation-triangle" style="color:#f44336;"></i> Emergency Alerts</h3>
+                </div>
+                <div class="emergency-stats">
+                    <div class="emergency-stat">
+                        <span class="emergency-value" id="eActiveDeliveries">0</span>
+                        <span class="emergency-label">Active</span>
+                    </div>
+                    <div class="emergency-stat">
+                        <span class="emergency-value" id="eSOS">0</span>
+                        <span class="emergency-label">SOS</span>
+                    </div>
+                </div>
+                <div class="emergency-list" id="emergencyList">
+                    <div class="loading-item">Loading alerts...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== MODALS ===== -->
+    <div class="modal-overlay" id="assignModal">
+        <div class="modal-content-mobile">
+            <div class="modal-header-mobile">
+                <h3>🛵 Assign Delivery Boy</h3>
+                <button class="modal-close-mobile" onclick="closeModal('assignModal')">✕</button>
+            </div>
+            <div class="modal-body-mobile">
+                <p><strong>Order:</strong> <span id="assignOrderId">-</span></p>
+                <select id="deliveryBoySelect" class="modal-select">
+                    <option value="">-- Select --</option>
+                </select>
+            </div>
+            <div class="modal-footer-mobile">
+                <button class="modal-btn cancel" onclick="closeModal('assignModal')">Cancel</button>
+                <button class="modal-btn confirm" onclick="confirmAssign()">Assign</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="blockUserModal">
+        <div class="modal-content-mobile">
+            <div class="modal-header-mobile" style="border-bottom-color:#f44336;">
+                <h3>🚫 Block User</h3>
+                <button class="modal-close-mobile" onclick="closeModal('blockUserModal')">✕</button>
+            </div>
+            <div class="modal-body-mobile">
+                <p><strong>Phone:</strong> <span id="blockUserPhone">-</span></p>
+                <input type="text" id="blockReasonInput" placeholder="Reason..." class="modal-input">
+            </div>
+            <div class="modal-footer-mobile">
+                <button class="modal-btn cancel" onclick="closeModal('blockUserModal')">Cancel</button>
+                <button class="modal-btn danger" onclick="confirmBlockUser()">Block</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="addProductModal">
+        <div class="modal-content-mobile">
+            <div class="modal-header-mobile">
+                <h3>➕ Add Product</h3>
+                <button class="modal-close-mobile" onclick="closeModal('addProductModal')">✕</button>
+            </div>
+            <div class="modal-body-mobile">
+                <input type="text" id="productIdInput" placeholder="Product ID" class="modal-input">
+                <input type="text" id="productNameInput" placeholder="Product Name" class="modal-input">
+                <input type="number" id="productPriceInput" placeholder="Price" class="modal-input">
+                <input type="number" id="productStockInput" placeholder="Stock" class="modal-input">
+                <input type="text" id="productCategoryInput" placeholder="Category" class="modal-input">
+            </div>
+            <div class="modal-footer-mobile">
+                <button class="modal-btn cancel" onclick="closeModal('addProductModal')">Cancel</button>
+                <button class="modal-btn confirm" onclick="confirmAddProduct()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== LIVE NOTIFICATION POPUP ===== -->
+    <div class="live-notification" id="liveNotification">
+        <div class="live-notif-content">
+            <div class="live-notif-icon" id="notifIcon">🔔</div>
+            <div class="live-notif-body">
+                <div class="live-notif-title" id="notifTitleText">New Order!</div>
+                <div class="live-notif-message" id="notifMessageText">Loading...</div>
+            </div>
+            <button class="live-notif-close" onclick="closeLiveNotif()">✕</button>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast"></div>
+
+    <script src="jss/admin.js"></script>
+</body>
+</html>
