@@ -12,9 +12,6 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
-
     <!-- Delivery Boy CSS -->
     <link rel="stylesheet" href="cast/dev-boy.css">
 </head>
@@ -39,7 +36,7 @@
             </div>
 
             <div class="login-form">
-                <!-- Phone Input (Common) -->
+                <!-- Phone Input -->
                 <div class="login-input-group">
                     <span class="login-input-icon">📱</span>
                     <input 
@@ -127,8 +124,26 @@
             </div>
             <div class="delivery-header-right">
                 <button id="refreshOrdersBtn" class="header-btn">🔄</button>
+                <button id="messageBtn" class="header-btn msg-btn" title="Admin Messages">📬</button>
                 <button id="logoutBtn" class="header-btn logout-btn" title="Logout">🚪</button>
             </div>
+        </div>
+
+        <!-- 🆕 Admin Message Banner -->
+        <div id="adminMessageBanner" class="admin-message-banner hidden">
+            <div class="admin-message-content">
+                <span class="admin-message-icon">📢</span>
+                <div class="admin-message-text">
+                    <span class="admin-message-title" id="adminMessageTitle">Admin Message</span>
+                    <span class="admin-message-body" id="adminMessageBody">Message</span>
+                </div>
+                <button class="admin-message-close" onclick="closeAdminMessage()">✕</button>
+            </div>
+        </div>
+
+        <!-- 🆕 Happy/Funny Message Toast -->
+        <div id="happyMessageToast" class="happy-message-toast hidden">
+            <span id="happyMessageText">🎉 शाबाश!</span>
         </div>
 
         <!-- Stats Bar -->
@@ -144,9 +159,14 @@
                 <span class="delivery-stat-label">Earnings</span>
             </div>
             <div class="delivery-stat">
+                <span class="delivery-stat-icon">📅</span>
+                <span class="delivery-stat-value" id="todayDeliveries">0</span>
+                <span class="delivery-stat-label">Today</span>
+            </div>
+            <div class="delivery-stat">
                 <span class="delivery-stat-icon">⏱️</span>
                 <span class="delivery-stat-value" id="loginTime">--:--</span>
-                <span class="delivery-stat-label">Login Time</span>
+                <span class="delivery-stat-label">Login</span>
             </div>
         </div>
 
@@ -231,7 +251,7 @@
         <div class="delivered-content">
             <div class="delivered-icon">🔄</div>
             <h3 class="delivered-title">Login Code भूल गए?</h3>
-            <p class="delivered-message">नया code admin approval के बाद मिलेगा। आपके registered phone पर ही request जा सकती है।</p>
+            <p class="delivered-message">नया code admin approval के बाद मिलेगा।</p>
             <div class="delivered-buttons">
                 <button id="confirmForgetBtn" class="delivered-btn confirm">✅ Request भेजें</button>
                 <button id="cancelForgetBtn" class="delivered-btn cancel">❌ Cancel</button>
@@ -239,18 +259,17 @@
         </div>
     </div>
 
-    <!-- 🆕 PAYMENT WARNING MODAL -->
-    <div id="paymentWarningModal" class="delivered-modal hidden">
+    <!-- 🆕 Admin Messages Modal -->
+    <div id="adminMessagesModal" class="delivered-modal hidden">
         <div class="delivered-overlay"></div>
         <div class="delivered-content">
-            <div class="delivered-icon">⚠️</div>
-            <h3 class="delivered-title">Payment Pending!</h3>
-            <p class="delivered-message" id="paymentWarningMessage">
-                ⏳ इस order का payment अभी pending है। 
-                पहले payment verified होने दो, फिर delivery करो!
-            </p>
+            <div class="delivered-icon">📬</div>
+            <h3 class="delivered-title">Admin Messages</h3>
+            <div id="adminMessagesList" class="admin-messages-list">
+                <!-- Messages load होंगे यहाँ -->
+            </div>
             <div class="delivered-buttons">
-                <button id="paymentWarningOkBtn" class="delivered-btn confirm">✅ ठीक है</button>
+                <button id="closeAdminMessages" class="delivered-btn cancel">❌ बंद करें</button>
             </div>
         </div>
     </div>
