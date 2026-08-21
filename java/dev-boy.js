@@ -515,14 +515,14 @@ class DeliveryBoyApp {
     // ============================================
     showPaymentWarning(orderId) {
         const paymentInfo = this.getPaymentInfo(orderId);
-        
+
         if (paymentInfo && paymentInfo.status !== 'Verified') {
             const message = this.getFunnyMessage('pendingPayment');
             document.getElementById('paymentWarningMessage').textContent = message;
             this.paymentWarningModal?.classList.remove('hidden');
             return true; // Warning shown
         }
-        
+
         return false; // No warning needed
     }
 
@@ -699,7 +699,7 @@ class DeliveryBoyApp {
             const orderId = order[0] || 'N/A';
             const status = order[13] || 'Pending';
             const statusLower = status.toLowerCase();
-            
+
             // 🆕 Payment Info
             const paymentInfo = this.getPaymentInfo(orderId);
             const paymentStatus = paymentInfo ? paymentInfo.status : 'Pending';
@@ -748,25 +748,51 @@ class DeliveryBoyApp {
     // ORDER ACTIONS
     // ============================================
     async acceptOrder(orderId) {
-        // 🆕 Payment check
-        if (this.showPaymentWarning(orderId)) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_URL}?action=acceptOrder&orderId=${orderId}&phone=${this.deliveryBoyPhone}`);
-            const data = await response.json();
-
-            if (data.success) {
-                console.log('✅ Order accepted:', orderId);
-                this.showFunnyToast(this.getFunnyMessage('accept'));
-                this.openMapForOrder(orderId);
-                this.loadAssignedOrders();
-            }
-        } catch (error) {
-            console.log('⚠️ Accept order error:', error);
-        }
+  // Payment check
+  if (this.showPaymentWarning(orderId)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_URL}?action=acceptOrder&orderId=${orderId}&phone=${this.deliveryBoyPhone}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      console.log('✅ Order accepted:', orderId);
+      
+      // 🆕 Order का total amount लें और delivery count update करें
+      await this.updateDeliveryCountForOrder(orderId);
+      
+      this.showFunnyToast(this.getFunnyMessage('accept'));
+      this.openMapForOrder(orderId);
+      this.loadAssignedOrders();
     }
+  } catch (error) {
+    console.log('⚠️ Accept order error:', error);
+  }
+}
+
+// 🆕 UPDATE DELIVERY COUNT FOR ORDER
+async updateDeliveryCountForOrder(orderId) {
+  try {
+    const response = await fetch(`${API_URL}?action=getOrders`);
+    const data = await response.json();
+    
+    if (data.success && data.orders) {
+      const order = data.orders.find(o => o[0] === orderId);
+      
+      if (order) {
+        const totalAmount = order[8] || '0';
+        console.log('💰 Updating delivery count. Phone:', this.deliveryBoyPhone, 'Amount:', totalAmount);
+        
+        await fetch(`${API_URL}?action=updateDeliveryCount&phone=${this.deliveryBoyPhone}&orderTotal=${totalAmount}`);
+        console.log('✅ Delivery count updated');
+      }
+    }
+  } catch (error) {
+    console.log('⚠️ Update count error:', error);
+  }
+}
 
     viewOrderDetails(orderId) {
         const modal = document.getElementById('orderDetailsModal');
