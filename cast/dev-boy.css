@@ -1,6 +1,6 @@
 /* ============================================
    DELIVERY BOY CSS - Complete Styling
-   With Login Code + Stats + Logout + Payment Status
+   With Login Code + Stats + Payment + Messages
    ============================================ */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -61,9 +61,7 @@ body {
     margin-bottom: 20px;
 }
 
-/* ============================================
-   LOGIN METHOD TABS
-   ============================================ */
+/* Login Method Tabs */
 .login-method-tabs {
     display: flex;
     background: #f5f5f5;
@@ -94,9 +92,7 @@ body {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* ============================================
-   LOGIN FORM
-   ============================================ */
+/* Login Form */
 .login-form {
     display: flex;
     flex-direction: column;
@@ -233,20 +229,9 @@ body {
     border-radius: 8px;
 }
 
-.login-status.success { 
-    color: #4CAF50; 
-    background: #E8F5E9;
-}
-
-.login-status.error { 
-    color: #f44336; 
-    background: #FFEBEE;
-}
-
-.login-status.pending { 
-    color: #FF9800; 
-    background: #FFF3E0;
-}
+.login-status.success { color: #4CAF50; background: #E8F5E9; }
+.login-status.error { color: #f44336; background: #FFEBEE; }
+.login-status.pending { color: #FF9800; background: #FFF3E0; }
 
 /* ============================================
    MAIN APP
@@ -309,11 +294,36 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
+    position: relative;
 }
 
 .header-btn:hover {
     background: rgba(255,255,255,0.3);
     transform: scale(1.1);
+}
+
+.msg-btn {
+    position: relative;
+}
+
+.msg-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    background: #f44336;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+    animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
 }
 
 .logout-btn {
@@ -325,13 +335,123 @@ body {
 }
 
 /* ============================================
+   🆕 ADMIN MESSAGE BANNER
+   ============================================ */
+.admin-message-banner {
+    background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+    border-left: 4px solid #FF9800;
+    padding: 12px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: bannerSlideIn 0.5s ease;
+    cursor: pointer;
+}
+
+@keyframes bannerSlideIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.admin-message-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.admin-message-icon {
+    font-size: 24px;
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+.admin-message-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.admin-message-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: #E65100;
+}
+
+.admin-message-body {
+    font-size: 10px;
+    color: #666;
+}
+
+.admin-message-close {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.1);
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.admin-message-close:hover {
+    background: #f44336;
+    color: white;
+}
+
+/* ============================================
+   🆕 HAPPY/FUNNY MESSAGE TOAST
+   ============================================ */
+.happy-message-toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    font-size: 13px;
+    font-weight: 700;
+    z-index: 9999;
+    box-shadow: 0 5px 25px rgba(255, 152, 0, 0.5);
+    animation: happyToastIn 0.5s ease;
+    white-space: nowrap;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@keyframes happyToastIn {
+    from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+.happy-message-toast.hide {
+    animation: happyToastOut 0.5s ease forwards;
+}
+
+@keyframes happyToastOut {
+    from { transform: translateX(-50%) translateY(0); opacity: 1; }
+    to { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+}
+
+/* ============================================
    STATS BAR
    ============================================ */
 .delivery-stats-bar {
     display: flex;
     background: white;
     padding: 12px 15px;
-    gap: 10px;
+    gap: 8px;
     border-bottom: 1px solid #eee;
 }
 
@@ -342,6 +462,12 @@ body {
     border-radius: 12px;
     background: #FFF8E1;
     transition: all 0.3s ease;
+    animation: statIn 0.5s ease;
+}
+
+@keyframes statIn {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 .delivery-stat:hover {
@@ -356,14 +482,14 @@ body {
 }
 
 .delivery-stat-value {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 800;
     color: #E65100;
     display: block;
 }
 
 .delivery-stat-label {
-    font-size: 10px;
+    font-size: 9px;
     color: #999;
     font-weight: 600;
 }
@@ -444,6 +570,30 @@ body {
     padding: 15px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     transition: all 0.3s ease;
+    animation: cardIn 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.order-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, #FF9800, #F57C00);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.order-card:hover::before {
+    opacity: 1;
+}
+
+@keyframes cardIn {
+    from { transform: translateY(15px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 .order-card:hover {
@@ -471,111 +621,29 @@ body {
     font-weight: 700;
 }
 
-.order-status-badge.pending {
-    background: #FFF3E0;
-    color: #E65100;
-}
-
+.order-status-badge.pending { background: #FFF3E0; color: #E65100; }
 .order-status-badge.accepted,
-.order-status-badge.confirmed {
-    background: #E8F5E9;
-    color: #2E7D32;
-}
+.order-status-badge.confirmed { background: #E8F5E9; color: #2E7D32; }
+.order-status-badge.in_transit { background: #E3F2FD; color: #1565C0; }
+.order-status-badge.delivered { background: #E8F5E9; color: #2E7D32; }
 
-.order-status-badge.in_transit {
-    background: #E3F2FD;
-    color: #1565C0;
-}
-
-.order-status-badge.delivered {
-    background: #E8F5E9;
-    color: #2E7D32;
-}
-
-/* ============================================
-   🆕 PAYMENT STATUS BADGE
-   ============================================ */
+/* 🆕 Payment Status Badge */
 .payment-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 10px;
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 8px;
     font-weight: 700;
-    margin-left: 6px;
-    animation: badgePop 0.3s ease;
+    margin-left: 5px;
 }
 
-@keyframes badgePop {
-    from { transform: scale(0.8); }
-    to { transform: scale(1); }
-}
+.payment-badge.verified { background: #E8F5E9; color: #2E7D32; }
+.payment-badge.pending { background: #FFF3E0; color: #E65100; animation: pulseBadge 1.5s infinite; }
+.payment-badge.cancelled { background: #FFEBEE; color: #C62828; }
 
-.payment-badge.payment-verified {
-    background: #E8F5E9;
-    color: #2E7D32;
-}
-
-.payment-badge.payment-pending {
-    background: #FFF3E0;
-    color: #E65100;
-    animation: pendingPulse 2s infinite;
-}
-
-.payment-badge.payment-cancelled {
-    background: #FFEBEE;
-    color: #C62828;
-}
-
-@keyframes pendingPulse {
+@keyframes pulseBadge {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
-}
-
-/* ============================================
-   🆕 PAYMENT INFO BAR
-   ============================================ */
-.payment-info-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    animation: slideIn 0.4s ease;
-}
-
-@keyframes slideIn {
-    from { transform: translateX(-10px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-.payment-info-bar.payment-verified {
-    background: #E8F5E9;
-    color: #2E7D32;
-}
-
-.payment-info-bar.payment-pending {
-    background: #FFF8E1;
-    color: #E65100;
-}
-
-.payment-info-bar.payment-cancelled {
-    background: #FFEBEE;
-    color: #C62828;
-}
-
-.payment-info-left {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.payment-info-right {
-    font-weight: 700;
 }
 
 .order-customer-info {
@@ -604,6 +672,25 @@ body {
     color: #2E7D32;
 }
 
+/* 🆕 Payment Info in Card */
+.payment-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #FAFAFA;
+    border-radius: 8px;
+    font-size: 10px;
+    color: #666;
+}
+
+.payment-info-row span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .order-actions {
     display: flex;
     gap: 8px;
@@ -629,35 +716,16 @@ body {
 }
 
 .delivery-action-btn:disabled {
-    opacity: 0.4;
+    opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
 }
 
-.accept-btn {
-    background: #4CAF50;
-    color: white;
-}
-
-.reject-btn {
-    background: #f44336;
-    color: white;
-}
-
-.view-btn {
-    background: #2196F3;
-    color: white;
-}
-
-.call-btn {
-    background: #FF9800;
-    color: white;
-}
-
-.delivered-btn {
-    background: #2E7D32;
-    color: white;
-}
+.accept-btn { background: #4CAF50; color: white; }
+.reject-btn { background: #f44336; color: white; }
+.view-btn { background: #2196F3; color: white; }
+.call-btn { background: #FF9800; color: white; }
+.delivered-btn { background: #2E7D32; color: white; }
+.navigate-btn { background: #4285F4; color: white; }
 
 /* Empty State */
 .empty-state {
@@ -669,6 +737,7 @@ body {
 .empty-state-icon {
     font-size: 48px;
     margin-bottom: 10px;
+    animation: float 2s ease-in-out infinite;
 }
 
 .empty-state-text {
@@ -702,13 +771,8 @@ body {
     white-space: nowrap;
 }
 
-.map-info-distance {
-    color: #FF9800;
-}
-
-.map-info-eta {
-    color: #2E7D32;
-}
+.map-info-distance { color: #FF9800; }
+.map-info-eta { color: #2E7D32; }
 
 /* ============================================
    ORDER DETAILS MODAL
@@ -794,50 +858,7 @@ body {
 }
 
 /* ============================================
-   🆕 PAYMENT DETAILS IN MODAL
-   ============================================ */
-.payment-detail-section {
-    background: #FAFAFA;
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 10px;
-    border-left: 3px solid #FF9800;
-}
-
-.payment-detail-section.verified {
-    border-left-color: #4CAF50;
-    background: #F1F8E9;
-}
-
-.payment-detail-section.pending {
-    border-left-color: #FF9800;
-    background: #FFF8E1;
-}
-
-.payment-detail-section.cancelled {
-    border-left-color: #f44336;
-    background: #FFEBEE;
-}
-
-.payment-detail-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 4px 0;
-    font-size: 12px;
-}
-
-.payment-detail-label {
-    color: #666;
-    font-weight: 600;
-}
-
-.payment-detail-value {
-    color: #333;
-    font-weight: 700;
-}
-
-/* ============================================
-   MODALS (Delivered, Logout, Forget Code, Payment Warning)
+   MODALS
    ============================================ */
 .delivered-modal {
     position: fixed;
@@ -925,41 +946,54 @@ body {
     transform: translateY(-2px);
 }
 
-.delivered-btn.confirm {
-    background: #4CAF50;
-    color: white;
-}
-
-.delivered-btn.cancel {
-    background: #f5f5f5;
-    color: #666;
-}
+.delivered-btn.confirm { background: #4CAF50; color: white; }
+.delivered-btn.cancel { background: #f5f5f5; color: #666; }
 
 /* ============================================
-   🆕 FUNNY MESSAGE TOAST
+   🆕 ADMIN MESSAGES LIST
    ============================================ */
-.funny-toast {
-    position: fixed;
-    bottom: 90px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #333;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 25px;
-    font-size: 12px;
-    font-weight: 700;
-    z-index: 9999;
-    animation: funnyToastIn 0.5s ease;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-    white-space: nowrap;
-    max-width: 90%;
-    text-align: center;
+.admin-messages-list {
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
-@keyframes funnyToastIn {
-    from { transform: translateX(-50%) translateY(20px); opacity: 0; }
-    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+.admin-message-item {
+    background: #FFF8E1;
+    border-left: 3px solid #FF9800;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: left;
+    animation: messageIn 0.3s ease;
+}
+
+@keyframes messageIn {
+    from { transform: translateX(-10px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.admin-message-item .msg-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #E65100;
+    display: block;
+}
+
+.admin-message-item .msg-text {
+    font-size: 11px;
+    color: #666;
+    display: block;
+    margin-top: 3px;
+}
+
+.admin-message-item .msg-time {
+    font-size: 9px;
+    color: #999;
+    display: block;
+    margin-top: 3px;
 }
 
 /* ============================================
@@ -973,19 +1007,17 @@ body {
 
     .login-logo { font-size: 52px; }
     .login-title { font-size: 20px; }
-
     .login-method-tab { font-size: 10px; padding: 8px 6px; }
 
     .delivery-header { padding: 12px 15px; }
     .delivery-boy-name { font-size: 14px; }
 
-    .delivery-stats-bar { padding: 10px; gap: 6px; }
-    .delivery-stat { padding: 6px; }
-    .delivery-stat-value { font-size: 13px; }
-    .delivery-stat-label { font-size: 9px; }
+    .delivery-stats-bar { padding: 10px; gap: 4px; }
+    .delivery-stat { padding: 5px; }
+    .delivery-stat-value { font-size: 12px; }
+    .delivery-stat-label { font-size: 8px; }
 
     .order-card { padding: 12px; }
-
     .delivery-action-btn { font-size: 10px; padding: 8px 6px; }
 
     .map-info { 
@@ -998,19 +1030,15 @@ body {
     .delivered-icon { font-size: 44px; }
     .delivered-title { font-size: 18px; }
     
-    .payment-badge { font-size: 9px; padding: 3px 8px; }
-    .funny-toast { font-size: 11px; padding: 10px 16px; }
+    .happy-message-toast {
+        font-size: 11px;
+        padding: 10px 15px;
+        top: 70px;
+    }
 }
 
 @media (max-width: 320px) {
     .delivery-stats-bar { flex-wrap: wrap; }
-    .delivery-stat { min-width: 80px; }
-
+    .delivery-stat { min-width: 70px; }
     .delivery-tab { font-size: 11px; padding: 10px 6px; }
-}
-
-/* Navigate Button (Google Maps) */
-.navigate-btn {
-    background: #4285F4;
-    color: white;
 }
